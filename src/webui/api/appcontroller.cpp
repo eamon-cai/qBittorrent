@@ -328,6 +328,7 @@ void AppController::preferencesAction()
     // Announce
     data["announce_to_all_trackers"] = session->announceToAllTrackers();
     data["announce_to_all_tiers"] = session->announceToAllTiers();
+    data["min_announce_interval"] = session->minAnnounceInterval();
     data["announce_ip"] = session->announceIP();
     data["max_concurrent_http_announces"] = session->maxConcurrentHTTPAnnounces();
     data["stop_tracker_timeout"] = session->stopTrackerTimeout();
@@ -802,6 +803,8 @@ void AppController::setPreferencesAction()
         session->setAnnounceToAllTrackers(it.value().toBool());
     if (hasKey("announce_to_all_tiers"))
         session->setAnnounceToAllTiers(it.value().toBool());
+    if (hasKey("min_announce_interval"))
+        session->setMinAnnounceInterval(it.value().toInt());
     if (hasKey("announce_ip"))
     {
         const QHostAddress announceAddr {it.value().toString().trimmed()};

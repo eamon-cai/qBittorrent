@@ -127,6 +127,7 @@ namespace
         // tracker
         ANNOUNCE_ALL_TRACKERS,
         ANNOUNCE_ALL_TIERS,
+        MIN_ANNOUNCE_INTERVAL,
         ANNOUNCE_IP,
         MAX_CONCURRENT_HTTP_ANNOUNCES,
         STOP_TRACKER_TIMEOUT,
@@ -294,6 +295,8 @@ void AdvancedSettings::saveAdvancedSettings()
 
     session->setAnnounceToAllTrackers(m_checkBoxAnnounceAllTrackers.isChecked());
     session->setAnnounceToAllTiers(m_checkBoxAnnounceAllTiers.isChecked());
+
+    session->setMinAnnounceInterval(m_spinBoxMinAnnounceInterval.value());
 
     session->setPeerTurnover(m_spinBoxPeerTurnover.value());
     session->setPeerTurnoverCutoff(m_spinBoxPeerTurnoverCutoff.value());
@@ -685,6 +688,15 @@ void AdvancedSettings::loadAdvancedSettings()
     addRow(ANNOUNCE_ALL_TIERS, (tr("Always announce to all tiers")
         + ' ' + makeLink("https://www.libtorrent.org/reference-Settings.html#announce_to_all_tiers", "(?)"))
         , &m_checkBoxAnnounceAllTiers);
+
+    // Minimal announce interval
+    m_spinBoxMinAnnounceInterval.setMinimum(1);
+    m_spinBoxMinAnnounceInterval.setMaximum(std::numeric_limits<int>::max());
+    m_spinBoxMinAnnounceInterval.setValue(session->minAnnounceInterval());
+    m_spinBoxMinAnnounceInterval.setSuffix(" s");
+    addRow(MIN_ANNOUNCE_INTERVAL, (tr("Minimal announce interval")
+        + ' ' + makeLink("https://www.libtorrent.org/reference-Settings.html#min_announce_interval", "(?)"))
+        , &m_spinBoxMinAnnounceInterval);
 
     m_spinBoxPeerTurnover.setMinimum(0);
     m_spinBoxPeerTurnover.setMaximum(100);
