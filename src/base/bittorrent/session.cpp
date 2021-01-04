@@ -342,6 +342,7 @@ Session::Session(QObject *parent)
     , m_IPFilterFile(BITTORRENT_SESSION_KEY("IPFilter"))
     , m_announceToAllTrackers(BITTORRENT_SESSION_KEY("AnnounceToAllTrackers"), false)
     , m_announceToAllTiers(BITTORRENT_SESSION_KEY("AnnounceToAllTiers"), true)
+    , m_minAnnounceInterval(BITTORRENT_SESSION_KEY("MinAnnounceInterval"), 300)
     , m_asyncIOThreads(BITTORRENT_SESSION_KEY("AsyncIOThreadsCount"), 10)
     , m_hashingThreads(BITTORRENT_SESSION_KEY("HashingThreadsCount"), 2)
     , m_filePoolSize(BITTORRENT_SESSION_KEY("FilePoolSize"), 40)
@@ -1269,6 +1270,8 @@ void Session::loadLTSettings(lt::settings_pack &settingsPack)
 
     settingsPack.set_bool(lt::settings_pack::announce_to_all_trackers, announceToAllTrackers());
     settingsPack.set_bool(lt::settings_pack::announce_to_all_tiers, announceToAllTiers());
+
+    settingsPack.set_int(lt::settings_pack::min_announce_interval, minAnnounceInterval());
 
     settingsPack.set_int(lt::settings_pack::peer_turnover, peerTurnover());
     settingsPack.set_int(lt::settings_pack::peer_turnover_cutoff, peerTurnoverCutoff());
@@ -3093,6 +3096,20 @@ void Session::setAnnounceToAllTiers(const bool val)
     if (val != m_announceToAllTiers)
     {
         m_announceToAllTiers = val;
+        configureDeferred();
+    }
+}
+
+int Session::minAnnounceInterval() const
+{
+    return m_minAnnounceInterval;
+}
+
+void Session::setMinAnnounceInterval(const int val)
+{
+    if (val != m_minAnnounceInterval)
+    {
+        m_minAnnounceInterval = val;
         configureDeferred();
     }
 }
