@@ -339,6 +339,8 @@ namespace BitTorrent
         void setAnnounceToAllTrackers(bool val);
         bool announceToAllTiers() const;
         void setAnnounceToAllTiers(bool val);
+        int minAnnounceInterval() const;
+        void setMinAnnounceInterval(int val);
         int peerTurnover() const;
         void setPeerTurnover(int num);
         int peerTurnoverCutoff() const;
@@ -656,6 +658,7 @@ namespace BitTorrent
         CachedSettingValue<QString> m_IPFilterFile;
         CachedSettingValue<bool> m_announceToAllTrackers;
         CachedSettingValue<bool> m_announceToAllTiers;
+        CachedSettingValue<int> m_minAnnounceInterval;
         CachedSettingValue<int> m_asyncIOThreads;
         CachedSettingValue<int> m_hashingThreads;
         CachedSettingValue<int> m_filePoolSize;

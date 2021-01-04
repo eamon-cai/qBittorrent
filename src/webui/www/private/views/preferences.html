@@ -1172,6 +1172,14 @@
             </tr>
             <tr>
                 <td>
+                    <label for="minAnnounceInterval">QBT_TR(Minimal announce interval:)QBT_TR[CONTEXT=OptionsDialog]&nbsp;<a href="https://www.libtorrent.org/reference-Settings.html#min_announce_interval" target="_blank">(?)</a></label>
+                </td>
+                <td>
+                    <input type="text" id="minAnnounceInterval" style="width: 15em;" />&nbsp;&nbsp;QBT_TR(s)QBT_TR[CONTEXT=OptionsDialog]
+                </td>
+            </tr>
+            <tr>
+                <td>
                     <label for="announceIP">QBT_TR(IP Address to report to trackers (requires restart):)QBT_TR[CONTEXT=OptionsDialog]&nbsp;<a href="https://www.libtorrent.org/reference-Settings.html#announce_ip" target="_blank">(?)</a></label>
                 </td>
                 <td>
@@ -1913,6 +1921,7 @@
                         $('uploadChokingAlgorithm').setProperty('value', pref.upload_choking_algorithm);
                         $('announceAllTrackers').setProperty('checked', pref.announce_to_all_trackers);
                         $('announceAllTiers').setProperty('checked', pref.announce_to_all_tiers);
+                        $('minAnnounceInterval').setProperty('value', pref.min_announce_interval);
                         $('announceIP').setProperty('value', pref.announce_ip);
                         $('maxConcurrentHTTPAnnounces').setProperty('value', pref.max_concurrent_http_announces);
                         $('stopTrackerTimeout').setProperty('value', pref.stop_tracker_timeout);
@@ -2301,6 +2310,7 @@
             settings.set('upload_choking_algorithm', $('uploadChokingAlgorithm').getProperty('value'));
             settings.set('announce_to_all_trackers', $('announceAllTrackers').getProperty('checked'));
             settings.set('announce_to_all_tiers', $('announceAllTiers').getProperty('checked'));
+            settings.set('min_announce_interval', $('minAnnounceInterval').getProperty('value'));
             settings.set('announce_ip', $('announceIP').getProperty('value'));
             settings.set('max_concurrent_http_announces', $('maxConcurrentHTTPAnnounces').getProperty('value'));
             settings.set('stop_tracker_timeout', $('stopTrackerTimeout').getProperty('value'));
