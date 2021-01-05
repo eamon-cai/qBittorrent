@@ -180,6 +180,11 @@ QString PeerInfo::client() const
     return QString::fromStdString(m_nativeInfo.client);
 }
 
+QString PeerInfo::peerId() const
+{
+    return QString::fromStdString(m_nativeInfo.pid.to_string());
+}
+
 qreal PeerInfo::progress() const
 {
     return m_nativeInfo.progress;
