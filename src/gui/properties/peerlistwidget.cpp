@@ -48,6 +48,7 @@
 #include "base/bittorrent/peerinfo.h"
 #include "base/bittorrent/session.h"
 #include "base/bittorrent/torrenthandle.h"
+#include "base/bittorrent/trackerentry.h"
 #include "base/global.h"
 #include "base/logger.h"
 #include "base/net/geoipmanager.h"
@@ -268,7 +269,8 @@ void PeerListWidget::showPeerListMenu(const QPoint &)
 
     // Add Peer Action
     // Do not allow user to add peers in a private torrent
-    if (!torrent->isQueued() && !torrent->isChecking() && !torrent->isPrivate())
+    // Except torrent tracker is empty.
+    if (!torrent->isQueued() && !torrent->isChecking() && !torrent->isPrivate() || torrent->isPrivate() && torrent->trackers().isEmpty())
     {
         const QAction *addPeerAct = menu->addAction(UIThemeManager::instance()->getIcon("user-group-new"), tr("Add a new peer..."));
         connect(addPeerAct, &QAction::triggered, this, [this, torrent]()
