@@ -2,6 +2,7 @@ add_library(qbt_base STATIC
     # headers
     algorithm.h
     asyncfilestorage.h
+    bittorrent/abstractfilestorage.h
     bittorrent/addtorrentparams.h
     bittorrent/bandwidthscheduler.h
     bittorrent/cachestatus.h
@@ -72,7 +73,6 @@ add_library(qbt_base STATIC
     settingsstorage.h
     torrentfileguard.h
     torrentfilter.h
-    tristatebool.h
     types.h
     unicodestrings.h
     utils/bytearray.h
@@ -86,9 +86,11 @@ add_library(qbt_base STATIC
     utils/random.h
     utils/string.h
     utils/version.h
+    version.h
 
     # sources
     asyncfilestorage.cpp
+    bittorrent/abstractfilestorage.cpp
     bittorrent/bandwidthscheduler.cpp
     bittorrent/customstorage.cpp
     bittorrent/downloadpriority.cpp
@@ -148,7 +150,6 @@ add_library(qbt_base STATIC
     settingsstorage.cpp
     torrentfileguard.cpp
     torrentfilter.cpp
-    tristatebool.cpp
     utils/bytearray.cpp
     utils/foreignapps.cpp
     utils/fs.cpp
@@ -165,7 +166,6 @@ target_link_libraries(qbt_base
     PRIVATE
         OpenSSL::Crypto OpenSSL::SSL
         ZLIB::ZLIB
-        qbt_version_definitions
     PUBLIC
         LibtorrentRasterbar::torrent-rasterbar
         Qt5::Core Qt5::Network Qt5::Xml

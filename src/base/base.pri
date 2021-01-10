@@ -1,6 +1,7 @@
 HEADERS += \
     $$PWD/algorithm.h \
     $$PWD/asyncfilestorage.h \
+    $$PWD/bittorrent/abstractfilestorage.h \
     $$PWD/bittorrent/addtorrentparams.h \
     $$PWD/bittorrent/bandwidthscheduler.h \
     $$PWD/bittorrent/cachestatus.h \
@@ -72,7 +73,6 @@ HEADERS += \
     $$PWD/settingvalue.h \
     $$PWD/torrentfileguard.h \
     $$PWD/torrentfilter.h \
-    $$PWD/tristatebool.h \
     $$PWD/types.h \
     $$PWD/unicodestrings.h \
     $$PWD/utils/bytearray.h \
@@ -85,10 +85,12 @@ HEADERS += \
     $$PWD/utils/password.h \
     $$PWD/utils/random.h \
     $$PWD/utils/string.h \
-    $$PWD/utils/version.h
+    $$PWD/utils/version.h \
+    $$PWD/version.h
 
 SOURCES += \
     $$PWD/asyncfilestorage.cpp \
+    $$PWD/bittorrent/abstractfilestorage.cpp \
     $$PWD/bittorrent/bandwidthscheduler.cpp \
     $$PWD/bittorrent/customstorage.cpp \
     $$PWD/bittorrent/downloadpriority.cpp \
@@ -148,7 +150,6 @@ SOURCES += \
     $$PWD/settingsstorage.cpp \
     $$PWD/torrentfileguard.cpp \
     $$PWD/torrentfilter.cpp \
-    $$PWD/tristatebool.cpp \
     $$PWD/utils/bytearray.cpp \
     $$PWD/utils/foreignapps.cpp \
     $$PWD/utils/fs.cpp \

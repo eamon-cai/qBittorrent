@@ -117,7 +117,6 @@ const char KEY_FILE_AVAILABILITY[] = "availability";
 namespace
 {
     using Utils::String::parseBool;
-    using Utils::String::parseTriStateBool;
 
     void applyToTorrents(const QStringList &hashes, const std::function<void (BitTorrent::TorrentHandle *torrent)> &func)
     {
@@ -253,7 +252,7 @@ void TorrentsController::infoAction()
     const QString filter {params()["filter"]};
     const QString category {params()["category"]};
     const QString sortedColumn {params()["sort"]};
-    const bool reverse {parseBool(params()["reverse"], false)};
+    const bool reverse {parseBool(params()["reverse"]).value_or(false)};
     int limit {params()["limit"].toInt()};
     int offset {params()["offset"].toInt()};
     const QStringList hashes {params()["hashes"].split('|', QString::SkipEmptyParts)};
@@ -601,11 +600,10 @@ void TorrentsController::pieceStatesAction()
 void TorrentsController::addAction()
 {
     const QString urls = params()["urls"];
-
-    const bool skipChecking = parseBool(params()["skip_checking"], false);
-    const bool seqDownload = parseBool(params()["sequentialDownload"], false);
-    const bool firstLastPiece = parseBool(params()["firstLastPiecePrio"], false);
-    const TriStateBool addPaused = parseTriStateBool(params()["paused"]);
+    const bool skipChecking = parseBool(params()["skip_checking"]).value_or(false);
+    const bool seqDownload = parseBool(params()["sequentialDownload"]).value_or(false);
+    const bool firstLastPiece = parseBool(params()["firstLastPiecePrio"]).value_or(false);
+    const std::optional<bool> addPaused = parseBool(params()["paused"]);
     const QString savepath = params()["savepath"].trimmed();
     const QString category = params()["category"];
     const QSet<QString> tags = List::toSet(params()["tags"].split(',', QString::SkipEmptyParts));
@@ -613,12 +611,12 @@ void TorrentsController::addAction()
     const QString torrentName = params()["rename"].trimmed();
     const int upLimit = params()["upLimit"].toInt();
     const int dlLimit = params()["dlLimit"].toInt();
-    const TriStateBool autoTMM = parseTriStateBool(params()["autoTMM"]);
+    const std::optional<bool> autoTMM = parseBool(params()["autoTMM"]);
 
     const QString contentLayoutParam = params()["contentLayout"];
-    const boost::optional<BitTorrent::TorrentContentLayout> contentLayout = (!contentLayoutParam.isEmpty()
+    const std::optional<BitTorrent::TorrentContentLayout> contentLayout = (!contentLayoutParam.isEmpty()
             ? Utils::String::toEnum(contentLayoutParam, BitTorrent::TorrentContentLayout::Original)
-            : boost::optional<BitTorrent::TorrentContentLayout> {});
+            : std::optional<BitTorrent::TorrentContentLayout> {});
 
     QList<QNetworkCookie> cookies;
     if (!cookie.isEmpty())
@@ -962,7 +960,7 @@ void TorrentsController::setSuperSeedingAction()
 {
     requireParams({"hashes", "value"});
 
-    const bool value {parseBool(params()["value"], false)};
+    const bool value {parseBool(params()["value"]).value_or(false)};
     const QStringList hashes {params()["hashes"].split('|')};
     applyToTorrents(hashes, [value](BitTorrent::TorrentHandle *const torrent) { torrent->setSuperSeeding(value); });
 }
@@ -971,7 +969,7 @@ void TorrentsController::setForceStartAction()
 {
     requireParams({"hashes", "value"});
 
-    const bool value {parseBool(params()["value"], false)};
+    const bool value {parseBool(params()["value"]).value_or(false)};
     const QStringList hashes {params()["hashes"].split('|')};
     applyToTorrents(hashes, [value](BitTorrent::TorrentHandle *const torrent)
     {
@@ -984,7 +982,7 @@ void TorrentsController::deleteAction()
     requireParams({"hashes", "deleteFiles"});
 
     const QStringList hashes {params()["hashes"].split('|')};
-    const DeleteOption deleteOption = parseBool(params()["deleteFiles"], false)
+    const DeleteOption deleteOption = parseBool(params()["deleteFiles"]).value_or(false)
             ? TorrentAndFiles : Torrent;
     applyToTorrents(hashes, [deleteOption](const BitTorrent::TorrentHandle *torrent)
     {
@@ -1085,7 +1083,7 @@ void TorrentsController::setAutoManagementAction()
     requireParams({"hashes", "enable"});
 
     const QStringList hashes {params()["hashes"].split('|')};
-    const bool isEnabled {parseBool(params()["enable"], false)};
+    const bool isEnabled {parseBool(params()["enable"]).value_or(false)};
 
     applyToTorrents(hashes, [isEnabled](BitTorrent::TorrentHandle *const torrent)
     {
@@ -1251,44 +1249,44 @@ void TorrentsController::tagsAction()
 
 void TorrentsController::renameFileAction()
 {
-    requireParams({"hash", "id", "name"});
+    requireParams({"hash", "oldPath", "newPath"});
 
     const QString hash = params()["hash"];
     BitTorrent::TorrentHandle *const torrent = BitTorrent::Session::instance()->findTorrent(hash);
     if (!torrent)
         throw APIError(APIErrorType::NotFound);
 
-    QString newName = params()["name"].trimmed();
-    if (newName.isEmpty())
-        throw APIError(APIErrorType::BadParams, tr("Name cannot be empty"));
-    if (!Utils::Fs::isValidFileSystemName(newName))
-        throw APIError(APIErrorType::Conflict, tr("Name is not valid"));
-    if (newName.endsWith(QB_EXT))
-        newName.chop(QB_EXT.size());
+    const QString oldPath = params()["oldPath"];
+    const QString newPath = params()["newPath"];
 
-    bool ok = false;
-    const int fileIndex = params()["id"].toInt(&ok);
-    if (!ok || (fileIndex < 0) || (fileIndex >= torrent->filesCount()))
-        throw APIError(APIErrorType::Conflict, tr("ID is not valid"));
-
-    const QString oldFileName = torrent->fileName(fileIndex);
-    const QString oldFilePath = torrent->filePath(fileIndex);
-
-    const bool useFilenameExt = BitTorrent::Session::instance()->isAppendExtensionEnabled()
-        && (torrent->filesProgress()[fileIndex] != 1);
-    const QString newFileName = (newName + (useFilenameExt ? QB_EXT : QString()));
-    const QString newFilePath = (oldFilePath.leftRef(oldFilePath.size() - oldFileName.size()) + newFileName);
-
-    if (oldFileName == newFileName)
-        return;
-
-    // check if new name is already used
-    for (int i = 0; i < torrent->filesCount(); ++i)
+    try
     {
-        if (i == fileIndex) continue;
-        if (Utils::Fs::sameFileNames(torrent->filePath(i), newFilePath))
-            throw APIError(APIErrorType::Conflict, tr("Name is already in use"));
+        torrent->renameFile(oldPath, newPath);
     }
+    catch (const RuntimeError &error)
+    {
+        throw APIError(APIErrorType::Conflict, error.message());
+    }
+}
 
-    torrent->renameFile(fileIndex, newFilePath);
+void TorrentsController::renameFolderAction()
+{
+    requireParams({"hash", "oldPath", "newPath"});
+
+    const QString hash = params()["hash"];
+    BitTorrent::TorrentHandle *const torrent = BitTorrent::Session::instance()->findTorrent(hash);
+    if (!torrent)
+        throw APIError(APIErrorType::NotFound);
+
+    const QString oldPath = params()["oldPath"];
+    const QString newPath = params()["newPath"];
+
+    try
+    {
+        torrent->renameFolder(oldPath, newPath);
+    }
+    catch (const RuntimeError &error)
+    {
+        throw APIError(APIErrorType::Conflict, error.message());
+    }
 }

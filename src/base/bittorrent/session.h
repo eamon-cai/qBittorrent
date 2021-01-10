@@ -30,6 +30,7 @@
 #pragma once
 
 #include <memory>
+#include <variant>
 #include <vector>
 
 #include <libtorrent/add_torrent_params.hpp>
@@ -526,8 +527,6 @@ namespace BitTorrent
         void torrentResumed(TorrentHandle *torrent);
         void torrentSavePathChanged(TorrentHandle *torrent);
         void torrentSavingModeChanged(TorrentHandle *torrent);
-        void torrentStorageMoveFailed(TorrentHandle *torrent, const QString &targetPath, const QString &error);
-        void torrentStorageMoveFinished(TorrentHandle *torrent, const QString &newPath);
         void torrentsUpdated(const QVector<TorrentHandle *> &torrents);
         void torrentTagAdded(TorrentHandle *torrent, const QString &tag);
         void torrentTagRemoved(TorrentHandle *torrent, const QString &tag);
@@ -604,7 +603,7 @@ namespace BitTorrent
         bool loadTorrentResumeData(const QByteArray &data, const TorrentInfo &metadata, LoadTorrentParams &torrentParams);
         bool loadTorrent(LoadTorrentParams params);
         LoadTorrentParams initLoadTorrentParams(const AddTorrentParams &addTorrentParams);
-        bool addTorrent_impl(const AddTorrentParams &addTorrentParams, const MagnetUri &magnetUri, TorrentInfo torrentInfo = TorrentInfo());
+        bool addTorrent_impl(const std::variant<MagnetUri, TorrentInfo> &source, const AddTorrentParams &addTorrentParams);
 
         void updateSeedingLimitTimer();
         void exportTorrentFile(const TorrentHandle *torrent, TorrentExportFolder folder = TorrentExportFolder::Regular);

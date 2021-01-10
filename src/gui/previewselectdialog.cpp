@@ -51,7 +51,7 @@ PreviewSelectDialog::PreviewSelectDialog(QWidget *parent, const BitTorrent::Torr
     : QDialog(parent)
     , m_ui(new Ui::PreviewSelectDialog)
     , m_torrent(torrent)
-    , m_storeDialogSize(SETTINGS_KEY("Dimension"))
+    , m_storeDialogSize(SETTINGS_KEY("Size"))
     , m_storeTreeHeaderState(SETTINGS_KEY("HeaderState"))
 {
     m_ui->setupUi(this);
@@ -159,7 +159,7 @@ void PreviewSelectDialog::loadWindowState()
     Utils::Gui::resize(this, m_storeDialogSize);
 
     // Restore TreeView Header state
-    if (!m_storeTreeHeaderState.value().isEmpty())
+    if (!m_storeTreeHeaderState.get().isEmpty())
     {
         m_headerStateInitialized = m_ui->previewList->header()->restoreState(m_storeTreeHeaderState);
     }

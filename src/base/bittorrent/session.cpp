@@ -78,13 +78,13 @@
 #include "base/profile.h"
 #include "base/torrentfileguard.h"
 #include "base/torrentfilter.h"
-#include "base/tristatebool.h"
 #include "base/unicodestrings.h"
 #include "base/utils/bytearray.h"
 #include "base/utils/fs.h"
 #include "base/utils/misc.h"
 #include "base/utils/net.h"
 #include "base/utils/random.h"
+#include "base/version.h"
 #include "bandwidthscheduler.h"
 #include "common.h"
 #include "customstorage.h"
@@ -291,9 +291,8 @@ namespace
     LowerLimited<T> lowerLimited(T limit, T ret) { return LowerLimited<T>(limit, ret); }
 
     template <typename T>
-    std::function<T (const T&)> clampValue(const T lower, const T upper)
+    auto clampValue(const T lower, const T upper)
     {
-        // TODO: change return type to `auto` when using C++17
         return [lower, upper](const T value) -> T
         {
             if (value < lower)
@@ -483,7 +482,7 @@ Session::Session(QObject *parent)
         m_storedCategories = map_cast(m_categories);
     }
 
-    m_tags = List::toSet(m_storedTags.value());
+    m_tags = List::toSet(m_storedTags.get());
 
     enqueueRefresh();
     updateSeedingLimitTimer();
@@ -1131,7 +1130,7 @@ void Session::initializeNativeSession()
 void Session::processBannedIPs(lt::ip_filter &filter)
 {
     // First, import current filter
-    for (const QString &ip : asConst(m_bannedIPs.value()))
+    for (const QString &ip : asConst(m_bannedIPs.get()))
     {
         lt::error_code ec;
         const lt::address addr = lt::make_address(ip.toLatin1().constData(), ec);
@@ -2043,14 +2042,14 @@ bool Session::addTorrent(const MagnetUri &magnetUri, const AddTorrentParams &par
 {
     if (!magnetUri.isValid()) return false;
 
-    return addTorrent_impl(params, magnetUri);
+    return addTorrent_impl(magnetUri, params);
 }
 
 bool Session::addTorrent(const TorrentInfo &torrentInfo, const AddTorrentParams &params)
 {
     if (!torrentInfo.isValid()) return false;
 
-    return addTorrent_impl(params, MagnetUri(), torrentInfo);
+    return addTorrent_impl(torrentInfo, params);
 }
 
 LoadTorrentParams Session::initLoadTorrentParams(const AddTorrentParams &addTorrentParams)
@@ -2061,19 +2060,13 @@ LoadTorrentParams Session::initLoadTorrentParams(const AddTorrentParams &addTorr
     loadTorrentParams.tags = addTorrentParams.tags;
     loadTorrentParams.firstLastPiecePriority = addTorrentParams.firstLastPiecePriority;
     loadTorrentParams.hasSeedStatus = addTorrentParams.skipChecking; // do not react on 'torrent_finished_alert' when skipping
-    loadTorrentParams.contentLayout = (addTorrentParams.contentLayout
-                                       ? *addTorrentParams.contentLayout
-                                       : torrentContentLayout());
-    loadTorrentParams.forced = (addTorrentParams.addForced == TriStateBool::True);
-    loadTorrentParams.paused = ((addTorrentParams.addPaused == TriStateBool::Undefined)
-                    ? isAddTorrentPaused()
-                    : (addTorrentParams.addPaused == TriStateBool::True));
+    loadTorrentParams.contentLayout = addTorrentParams.contentLayout.value_or(torrentContentLayout());
+    loadTorrentParams.forced = addTorrentParams.addForced;
+    loadTorrentParams.paused = addTorrentParams.addPaused.value_or(isAddTorrentPaused());
     loadTorrentParams.ratioLimit = addTorrentParams.ratioLimit;
     loadTorrentParams.seedingTimeLimit = addTorrentParams.seedingTimeLimit;
 
-    const bool useAutoTMM = ((addTorrentParams.useAutoTMM == TriStateBool::Undefined)
-                           ? !isAutoTMMDisabledByDefault()
-                           : (addTorrentParams.useAutoTMM == TriStateBool::True));
+    const bool useAutoTMM = addTorrentParams.useAutoTMM.value_or(!isAutoTMMDisabledByDefault());
     if (useAutoTMM)
         loadTorrentParams.savePath = "";
     else if (addTorrentParams.savePath.trimmed().isEmpty())
@@ -2091,9 +2084,11 @@ LoadTorrentParams Session::initLoadTorrentParams(const AddTorrentParams &addTorr
 }
 
 // Add a torrent to the BitTorrent session
-bool Session::addTorrent_impl(const AddTorrentParams &addTorrentParams, const MagnetUri &magnetUri, TorrentInfo metadata)
+bool Session::addTorrent_impl(const std::variant<MagnetUri, TorrentInfo> &source, const AddTorrentParams &addTorrentParams)
 {
-    const bool hasMetadata = metadata.isValid();
+    const bool hasMetadata = std::holds_alternative<TorrentInfo>(source);
+    TorrentInfo metadata = (hasMetadata ? std::get<TorrentInfo>(source) : TorrentInfo {});
+    const MagnetUri &magnetUri = (hasMetadata ? MagnetUri {} : std::get<MagnetUri>(source));
     const InfoHash hash = (hasMetadata ? metadata.hash() : magnetUri.hash());
 
     // It looks illogical that we don't just use an existing handle,
@@ -3159,7 +3154,7 @@ void Session::setPeerTurnoverInterval(const int val)
 
 int Session::asyncIOThreads() const
 {
-    return qBound(1, m_asyncIOThreads.value(), 1024);
+    return qBound(1, m_asyncIOThreads.get(), 1024);
 }
 
 void Session::setAsyncIOThreads(const int num)
@@ -3173,7 +3168,7 @@ void Session::setAsyncIOThreads(const int num)
 
 int Session::hashingThreads() const
 {
-    return qBound(1, m_hashingThreads.value(), 1024);
+    return qBound(1, m_hashingThreads.get(), 1024);
 }
 
 void Session::setHashingThreads(const int num)
@@ -3201,7 +3196,7 @@ void Session::setFilePoolSize(const int size)
 
 int Session::checkingMemUsage() const
 {
-    return qMax(1, m_checkingMemUsage.value());
+    return qMax(1, m_checkingMemUsage.get());
 }
 
 void Session::setCheckingMemUsage(int size)
@@ -3218,11 +3213,11 @@ void Session::setCheckingMemUsage(int size)
 int Session::diskCacheSize() const
 {
 #ifdef QBT_APP_64BIT
-    return qMin(m_diskCacheSize.value(), 33554431);  // 32768GiB
+    return qMin(m_diskCacheSize.get(), 33554431);  // 32768GiB
 #else
     // When build as 32bit binary, set the maximum at less than 2GB to prevent crashes
     // allocate 1536MiB and leave 512MiB to the rest of program data in RAM
-    return qMin(m_diskCacheSize.value(), 1536);
+    return qMin(m_diskCacheSize.get(), 1536);
 #endif
 }
 
@@ -3754,7 +3749,7 @@ bool Session::isListening() const
 
 MaxRatioAction Session::maxRatioAction() const
 {
-    return static_cast<MaxRatioAction>(m_maxRatioAction.value());
+    return static_cast<MaxRatioAction>(m_maxRatioAction.get());
 }
 
 void Session::setMaxRatioAction(const MaxRatioAction act)
@@ -4946,9 +4941,6 @@ void Session::handleStorageMovedAlert(const lt::storage_moved_alert *p)
     const QString torrentName = (torrent ? torrent->name() : QString {infoHash});
     LogMsg(tr("\"%1\" is successfully moved to \"%2\".").arg(torrentName, newPath));
 
-    if (torrent)
-        emit torrentStorageMoveFinished(torrent, newPath);
-
     handleMoveTorrentStorageJobFinished();
 }
 
@@ -4966,9 +4958,6 @@ void Session::handleStorageMovedFailedAlert(const lt::storage_moved_failed_alert
     const QString errorMessage = QString::fromStdString(p->message());
     LogMsg(tr("Failed to move \"%1\" from \"%2\" to \"%3\". Reason: %4.")
            .arg(torrentName, currentLocation, currentJob.path, errorMessage), Log::CRITICAL);
-
-    if (torrent)
-        emit torrentStorageMoveFailed(torrent, currentJob.path, errorMessage);
 
     handleMoveTorrentStorageJobFinished();
 }
