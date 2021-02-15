@@ -42,7 +42,7 @@
 #include "base/bittorrent/infohash.h"
 #include "base/bittorrent/magneturi.h"
 #include "base/bittorrent/session.h"
-#include "base/bittorrent/torrenthandle.h"
+#include "base/bittorrent/torrent.h"
 #include "base/exceptions.h"
 #include "base/global.h"
 #include "base/net/downloadmanager.h"
@@ -275,7 +275,7 @@ bool AddNewTorrentDialog::loadTorrentImpl()
     // Prevent showing the dialog if download is already present
     if (BitTorrent::Session::instance()->isKnownTorrent(infoHash))
     {
-        BitTorrent::TorrentHandle *const torrent = BitTorrent::Session::instance()->findTorrent(infoHash);
+        BitTorrent::Torrent *const torrent = BitTorrent::Session::instance()->findTorrent(infoHash);
         if (torrent)
         {
             if (torrent->isPrivate() || m_torrentInfo.isPrivate())
@@ -316,7 +316,7 @@ bool AddNewTorrentDialog::loadMagnet(const BitTorrent::MagnetUri &magnetUri)
     // Prevent showing the dialog if download is already present
     if (BitTorrent::Session::instance()->isKnownTorrent(infoHash))
     {
-        BitTorrent::TorrentHandle *const torrent = BitTorrent::Session::instance()->findTorrent(infoHash);
+        BitTorrent::Torrent *const torrent = BitTorrent::Session::instance()->findTorrent(infoHash);
         if (torrent)
         {
             if (torrent->isPrivate())
@@ -655,7 +655,7 @@ void AddNewTorrentDialog::setupTreeview()
 
         // Set torrent information
         m_ui->labelCommentData->setText(Utils::Misc::parseHtmlLinks(m_torrentInfo.comment().toHtmlEscaped()));
-        m_ui->labelDateData->setText(!m_torrentInfo.creationDate().isNull() ? m_torrentInfo.creationDate().toString(Qt::DefaultLocaleShortDate) : tr("Not available"));
+        m_ui->labelDateData->setText(!m_torrentInfo.creationDate().isNull() ? QLocale().toString(m_torrentInfo.creationDate(), QLocale::ShortFormat) : tr("Not available"));
 
         // Prepare content tree
         m_contentModel = new TorrentContentFilterModel(this);
